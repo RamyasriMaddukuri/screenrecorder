@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Screen Recorder</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+    }
+    video {
+      border: 1px solid #ccc;
+      display: none;
+    }
+    button {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Screen Recorder</h1>
+  <video id="videoElement" width="640" height="480" autoplay></video>
+  <button id="startButton">Start Recording</button>
+  <button id="stopButton">Stop Recording</button>
+
+  <script>
+    let stream;
+    let chunks = [];
+
+    const videoElement = document.getElementById('videoElement');
+    const startButton = document.getElementById('startButton');
+    const stopButton = document.getElementById('stopButton');
+
+    async function startRecording() {
+      try {
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: {
+            mediaSource: 'screen',
+          },
+        });
+
+        videoElement.srcObject = stream;
+
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            chunks.push(e.data);
+          }
+        };
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(chunks, { type: 'video/webm' });
+          chunks = [];
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'recording.webm';
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+        mediaRecorder.start();
+      } catch (err) {
+        console.error('Error accessing screen: ', err);
+      }
+    }
+
+    function stopRecording() {
+      if (stream) {
+        const tracks = stream.getTracks();
+        tracks.forEach((track) => track.stop());
+      }
+    }
+
+    startButton.addEventListener('click', startRecording);
+    stopButton.addEventListener('click', stopRecording);
+  </script>
+</body>
+</html>
